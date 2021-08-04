@@ -46,9 +46,9 @@ namespace MapReducer
         public static TAccumulate CustomReduce<TKey, TResult, TAccumulate>(IEnumerable<IGrouping<TKey, TResult>> source, TAccumulate seed, Func<TAccumulate, TResult, TAccumulate> reducer)
         {
             TAccumulate result = seed;
-            foreach (IGrouping<TKey, TResult> key in source)
+            foreach (IGrouping<TKey, TResult> elementWithKeyValue in source)
             {
-                foreach (TResult value in key)
+                foreach (TResult value in elementWithKeyValue)
                 {
                     result = reducer(result, value);
                 }      
