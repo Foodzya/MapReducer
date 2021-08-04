@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
@@ -7,11 +7,11 @@ namespace MapReducer
 {
     public static class MapReducer
     {
-        public static void MapReduce<TElement, TResult, TKey>(this IEnumerable<TElement> source, Func<TElement, TResult> selector, Func<TResult, TKey> keySelector, Func<TResult, TResult, TResult> reducer)
+        public static TAccumulate MapReduce<TElement, TResult, TKey, TAccumulate>(this IEnumerable<TElement> source, TAccumulate seed, Func<TElement, TResult> selector, Func<TResult, TKey> keySelector, Func<TAccumulate, TResult, TAccumulate> reducer)
         {
             IEnumerable<TResult> afterSelect = CustomSelect(source, selector);
             IEnumerable<IGrouping<TKey, TResult>> afterGroupBy = CustomGroupBy(afterSelect, keySelector);
-            CustomReduce(afterGroupBy, reducer);
+            return CustomReduce(afterGroupBy, seed, reducer);         
         }
 
         public static IEnumerable<TResult> CustomSelect<T, TResult>(IEnumerable<T> source, Func<T, TResult> selector)
@@ -26,7 +26,7 @@ namespace MapReducer
         {
             Dictionary<TKey, List<TElement>> dict = new Dictionary<TKey, List<TElement>>();
 
-            foreach (TElement x in source)
+            foreach (TElement x in source)  
             {
                 TKey key = keySelector(x);
                 if (dict.Keys.Contains(key))
@@ -43,28 +43,17 @@ namespace MapReducer
         }
 
 
-        public static void CustomReduce<TKey, T>(IEnumerable<IGrouping<TKey, T>> source, Func<T, T, T> reducer)
+        public static TAccumulate CustomReduce<TKey, TResult, TAccumulate>(IEnumerable<IGrouping<TKey, TResult>> source, TAccumulate seed, Func<TAccumulate, TResult, TAccumulate> reducer)
         {
-            T result = default(T);
-            foreach (var key in source)
+            TAccumulate result = seed;
+            foreach (IGrouping<TKey, TResult> key in source)
             {
-                //Console.WriteLine(key.Key);
-                foreach (var value in key)
+                foreach (TResult value in key)
                 {
-                    IEnumerator<T> enumerator = key.GetEnumerator();
-                    result = enumerator.Current;
-                    while (enumerator.MoveNext())
-                        result = reducer(result, enumerator.Current);
-                }
-                Console.WriteLine(result);
+                    result = reducer(result, value);
+                }      
             }
-
-            //IEnumerator<T> enumerator = source.GetEnumerator();
-            //T result = enumerator.Current;
-            //while (enumerator.MoveNext())
-            //{
-            //	result = reducer(result, enumerator.Current);
-            //}
+            return result;
         }
     }
 
